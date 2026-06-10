@@ -14,6 +14,16 @@ turning the project into a giant ML circus 🤡
 No fake AGI claim 🙅 No giant checkpoint 💀 No benchmark number unless the command
 that produced it exists 🔒
 
+## Demo Video
+
+Watch the current MLP zombie policy running in the real game:
+
+[![Tiny MLP zombie swarm AI demo](https://img.youtube.com/vi/UGRb-PfT5CQ/hqdefault.jpg)](https://youtu.be/UGRb-PfT5CQ?si=FmYV-yOfVVga3x5x)
+
+This is not the model driving raw movement. Godot still owns pathfinding,
+physics, animation, cooldowns, and hit detection. The tiny policy only picks
+the tactical action, then the rule layer makes it executable.
+
 ## ✨ What This Is
 
 The game still owns the hard real-time stuff 🏃‍♂️💨
