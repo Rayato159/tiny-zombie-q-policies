@@ -1,0 +1,14 @@
+/target/
+target-*/
+
+# Local datasets and generated checkpoints. Publish tiny curated samples only.
+/data/
+/runs/
+/checkpoints/
+*.csv
+
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
