@@ -6,6 +6,7 @@ target-*/
 /runs/
 /checkpoints/
 *.csv
+!/paper-results/*.csv
 
 *.log
 *.tmp

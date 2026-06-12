@@ -1,0 +1,6 @@
+budget,params,player_death_rate_mean,player_death_rate_std,fastest_player_kill_seconds_mean,fastest_player_kill_seconds_std,mean_time_to_player_death_or_timeout_mean,mean_time_to_player_death_or_timeout_std,speed_score_mean,speed_score_std,mean_reward_per_episode_mean,mean_reward_per_episode_std,action_diversity_mean,action_diversity_std
+1k,991,1,0,3.6043,0.5126,6.085,0.1875,0.8986,0.0031,-12.5721,1.1067,0.4753,0.0542
+2k,1977,0.9833,0.0289,2.8325,0.1597,7.3022,1.111,0.8783,0.0185,-22.8668,5.1902,0.5411,0.0168
+4k,3978,1,0,3.6234,0.2499,6.0813,0.2683,0.8986,0.0045,-12.8573,6.1665,0.4431,0.1418
+8k,7980,1,0,3.5506,0.3051,5.9,0.3069,0.9017,0.0051,-4.0285,3.9812,0.5597,0.0219
+10k,9981,1,0,3.9,0.1268,6.7759,0.9209,0.8871,0.0153,-8.9033,9.7673,0.6813,0.022

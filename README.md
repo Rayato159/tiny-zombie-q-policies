@@ -1,255 +1,244 @@
 # 🧟 Tiny Zombie Q Policies
 
 <p align="center">
-  <img src="arts/zombie_1_move_sample.gif" alt="zombie swarm in action" width="240" />
+  <img src="arts/zombie_1_move_sample.gif" alt="zombie policy in action" width="240" />
 </p>
 
-> Small Rust models for tactical zombie swarm control in a real Godot game 🎮
+> Small Rust models for tactical game AI in a real Godot project 🎮
 
-This repo is the model side only 🫠 It does not ship the full game source. The
-goal is simple: keep the neural policy tiny enough to run inside a frame, then
-check whether it can replace part of a hand-written zombie rule tree without
-turning the project into a giant ML circus 🤡
+Rust-only model code for the paper **"When Should Small Games Use AI?"**
 
-No fake AGI claim 🙅 No giant checkpoint 💀 No benchmark number unless the command
-that produced it exists 🔒
+This repo is the model side only 🦀 It does not ship the full Godot game source.
+The paper uses a controlled 2D action-game simulation to ask a practical
+question:
 
-## Demo Video
+> when should a small game keep handcrafted tactical rules, and when do tiny
+> learned policies become worth the extra data/training/runtime cost?
 
-Watch the current MLP zombie policy running in the real game:
+No fake AGI pitch. No giant checkpoint. No "trust me bro" model magic. The
+current result is more useful than that: the rule expert is still the strongest
+default controller in the narrow arena, while an 8k MLP gets close and the 10k
+grouped-attention model increases tactical coverage without winning the primary
+speed metric 🔒
 
-[![Tiny MLP zombie swarm AI demo](https://img.youtube.com/vi/UGRb-PfT5CQ/hqdefault.jpg)](https://youtu.be/UGRb-PfT5CQ?si=FmYV-yOfVVga3x5x)
+## 🎥 Demo
 
-This is not the model driving raw movement. Godot still owns pathfinding,
-physics, animation, cooldowns, and hit detection. The tiny policy only picks
-the tactical action, then the rule layer makes it executable.
+Current gameplay demo:
 
-## ✨ What This Is
+[Watch the demo video](https://youtu.be/UGRb-PfT5CQ?si=FmYV-yOfVVga3x5x)
 
-The game still owns the hard real-time stuff 🏃‍♂️💨
+The model does not drive raw movement. Godot still owns pathfinding, collision,
+animation, cooldowns, hit detection, and combat execution. The policy only
+selects a high-level tactical action, then the game-side feasibility layer makes
+that action executable.
 
-- A* / navigation 🗺️
-- movement 🚶
-- collision 💥
-- melee hit timing ⚔️
-- animation 🎞️
-- spawning 👻
+## 📄 Paper
 
-The model only chooses a high-level tactical action 🧠:
+Read the current paper draft here:
 
-```text
-ATTACK ⚔️
-FLANK_LEFT ↙️
-FLANK_RIGHT ↘️
-DASH_IN 💨
-DASH_OUT 🏃‍♂️💨
-```
+[When Should Small Games Use AI?](paper-results/When%20Should%20Small%20Games%20Use%20AI.pdf)
 
-That action goes through a feasibility layer in Godot/Rust. If the model asks
-for nonsense, the game clamps it back into something executable 🛡️
+## 📦 What Is In This Repo
 
-## 🏆 Current Models
+- `zombie_policy_core`: small Rust policy definitions and helpers.
+- `train_tiny_q`: offline CSV-to-JSON checkpoint trainer.
+- `paper-results/`: paper-facing result tables copied from the current
+  manuscript artifacts, plus the current PDF draft.
+- `arts/`: small public demo media.
 
-### 📜 Rule Expert
+The full game source, raw telemetry, Godot caches, and local build output do not
+belong here.
 
-The baseline is hand-written. It reads the same tactical state and chooses an
-action with explicit branches. This is the thing the neural policies are trying
-to compete with, not a strawman that walks into a wall 😤
+## 🕹️ Policy Interface
 
-### 🧱 Tiny MLP Q-Policy
-
-Budget target: about 1k parameters by default 📦
-
-Shape:
+The enemy policy chooses one of five tactical actions:
 
 ```text
-state -> linear -> ReLU -> Q(action) 🔥
+ATTACK
+FLANK_LEFT
+FLANK_RIGHT
+DASH_IN
+DASH_OUT
 ```
 
-It is boring on purpose 💤 If attention cannot beat this under the same state and
-action contract, attention does not get a trophy for looking cool 🏅❌
-
-### 👀 Grouped-Attention Q-Policy
-
-Budget target: below 10k parameters 🎯
-
-The state is treated as feature tokens. A tiny grouped-attention stack lets the
-policy compare player gates, relative geometry, orientation, and swarm pressure
-before producing Q-values 🔍
-
-Grouped K/V heads keep the parameter count low 💪 The trainer includes full
-backprop through the attention stack with a streaming KV recurrence for
-efficiency ⚡
-
-## 📋 State Contract
-
-Zombie policies use 23 features 🧟‍♂️:
+The player-side bot uses the same action count but a different action meaning:
 
 ```text
-is_player_armed 🔫
-is_player_stamina_less_half 😮‍💨
-is_player_health_less_half ❤️‍🩹
-is_player_stuck 😵
-player_stuck_normal_x ↔️
-player_stuck_normal_y ↕️
-nearby_zombie_count 👥
-dash_ready 💨
-attack_ready ⚔️
-nearest_zombie_distance 📏
-nearest_zombie_dir_x ➡️
-nearest_zombie_dir_y ⬆️
-player_speed 🏃
-swarm_centroid_dir_x 🧲
-swarm_centroid_dir_y 🧲
-player_facing_dot_nearest_zombie 🎯
-nearest_zombie_side_sign ↔️
-backstab_opportunity 🔪
-swarm_left_pressure ⬅️
-swarm_right_pressure ➡️
-swarm_front_pressure ⬆️
-swarm_back_pressure ⬇️
-swarm_spread 📐
+ATTACK
+APPROACH
+RETREAT
+STRAFE
+ROLL
 ```
 
-Player-side training uses a separate 15-feature survival-fighter state 🤺:
+## 🧠 Current Model Shapes
+
+These defaults match the current paper framing.
+
+| Model | Config | Runtime params |
+| --- | --- | ---: |
+| MLP 8k | 23 inputs, hidden width 275, 5 actions | 7,980 |
+| Grouped attention 10k | 23 inputs, d=40, 2 layers, 4 query heads, 1 KV head, 5 actions | 9,325 |
+
+The capacity sweep in the paper still reports 1k, 2k, 4k, 8k, and 10k budget
+buckets. The selected paper comparison is:
+
+| Controller | TTK/timeout (s) | Defeat rate | Fastest defeat (s) | Speed score | Diversity |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Rule expert | 5.76 +/- 1.64 | 0.98 +/- 0.03 | 3.03 +/- 0.34 | 0.90 +/- 0.03 | 0.84 +/- 0.08 |
+| MLP 8k | 5.90 +/- 0.31 | 1.00 +/- 0.00 | 3.55 +/- 0.31 | 0.90 +/- 0.01 | 0.56 +/- 0.02 |
+| Attention 10k | 6.18 +/- 0.35 | 1.00 +/- 0.00 | 3.77 +/- 0.16 | 0.90 +/- 0.01 | 0.66 +/- 0.10 |
+
+Lower TTK/timeout is better. Failed player defeats count as the full 60-second
+timeout.
+
+## 📡 State Contract
+
+Enemy policies use 23 features. The names keep the historical `zombie` and
+`swarm` prefixes because existing CSV/checkpoint contracts use them.
 
 ```text
-health_ratio ❤️
-stamina_ratio 💛
-is_player_armed 🔫
-is_player_attacking ⚔️
-nearest_zombie_distance 📏
-nearest_zombie_dir_x ➡️
-nearest_zombie_dir_y ⬆️
-nearest_zombie_attacking 💥
-zombie_count 👥
-pressure_count 🗜️
-player_speed 🏃
-player_facing_dot_nearest_zombie 🎯
-swarm_centroid_dir_x 🧲
-swarm_centroid_dir_y 🧲
-dodge_ready 🤸
+is_player_armed
+is_player_stamina_less_half
+is_player_health_less_half
+is_player_stuck
+player_stuck_normal_x
+player_stuck_normal_y
+nearby_zombie_count
+dash_ready
+attack_ready
+nearest_zombie_distance
+nearest_zombie_dir_x
+nearest_zombie_dir_y
+player_speed
+swarm_centroid_dir_x
+swarm_centroid_dir_y
+player_facing_dot_nearest_zombie
+nearest_zombie_side_sign
+backstab_opportunity
+swarm_left_pressure
+swarm_right_pressure
+swarm_front_pressure
+swarm_back_pressure
+swarm_spread
 ```
 
-These names are part of the contract 🔒 Change them casually and the checkpoint
-loader should reject your nonsense 🚫
+Player-side training uses a separate 15-feature duelist state:
 
-## 🚀 Quick Start
+```text
+health_ratio
+stamina_ratio
+is_player_armed
+is_player_attacking
+nearest_zombie_distance
+nearest_zombie_dir_x
+nearest_zombie_dir_y
+nearest_zombie_attacking
+zombie_count
+pressure_count
+player_speed
+player_facing_dot_nearest_zombie
+swarm_centroid_dir_x
+swarm_centroid_dir_y
+dodge_ready
+```
 
-Run tests ✅:
+Do not rename these casually. The trainer expects CSV columns in the form:
+
+```text
+action_id,reward,done,prev_<feature...>,next_<feature...>
+```
+
+## ⚡ Quick Start
+
+Run tests:
 
 ```powershell
 cargo test
 ```
 
-Train a tiny MLP zombie checkpoint from a transition CSV 🏋️:
+Train the selected 8k MLP enemy checkpoint:
 
 ```powershell
 cargo run --bin train_tiny_q -- `
-  --input ..\assets\ai\tiny_q_mlp_selfplay_r1002.csv `
+  --input ..\assets\ai\tiny_q_mlp_selfplay.csv `
   --output ..\checkpoints\zombie_policy_mlp_release.json `
   --model mlp `
   --role zombie `
+  --hidden-dim 275 `
   --epochs 100
 ```
 
-Train a grouped-attention checkpoint 🧠✨:
+Train the selected 10k grouped-attention enemy checkpoint:
 
 ```powershell
 cargo run --bin train_tiny_q -- `
-  --input ..\assets\ai\tiny_q_attention_selfplay_r1205.csv `
+  --input ..\assets\ai\tiny_q_attention_selfplay.csv `
   --output ..\checkpoints\zombie_policy_attention_release.json `
   --model attention `
   --role zombie `
-  --d-model 24 `
+  --d-model 40 `
   --layers 2 `
   --heads 4 `
   --kv-heads 1 `
   --epochs 100
 ```
 
-Train a player-side policy 🤺:
+Train a player-side MLP checkpoint:
 
 ```powershell
 cargo run --bin train_tiny_q -- `
-  --input ..\assets\ai\player_q_attention_selfplay_r1205.csv `
-  --output ..\checkpoints\player_policy_r1205.json `
+  --input ..\assets\ai\player_q_selfplay.csv `
+  --output ..\checkpoints\player_policy_release.json `
   --model mlp `
   --role player `
   --input-dim 15 `
+  --hidden-dim 275 `
   --epochs 100
 ```
 
-## 📊 CSV Schema
+## 🔬 Model Math
 
-The trainer expects transition rows 📝:
-
-```text
-action_id,reward,done,prev_<feature...>,next_<feature...>
-```
-
-For zombie policies, `prev_` and `next_` must cover the 23 zombie features 🧟
-For player policies, they must cover the 15 player features 🤺
-
-Rewards are intentionally gameplay-shaped 🎮:
-
-- hurt the player 🗡️
-- force stamina pressure 😮‍💨
-- finish the kill fast ⚡
-- avoid getting hit or killed 🛡️
-- avoid wasting dash actions 🚫💨
-- create flank and back-pressure 🔄
-
-The point is not to solve a toy grid 🧩 The point is to make the actual game
-harder in a way a player can feel 😈
-
-## 📏 Parameter Budget
-
-The paper keeps policies under 10k parameters 📐 The crate has helpers that pin
-the default sizes:
+MLP:
 
 ```text
-Tiny MLP default:              991 parameters 🧱
-Grouped-attention default:   3,677 parameters 👀
-Budget ceiling:             10,000 parameters 🏗️
+x = (s - mean) / (std + eps)
+z = ReLU(W1 x + b1)
+Q(s, .) = W2 z + b2
 ```
 
-If a model crosses the ceiling, it is not part of the tiny-policy comparison 🚫
-
-## 🎮 Runtime Shape
-
-The Godot game loads JSON checkpoints through the Rust GDExtension runtime 🦀
-The public checkpoint format is deliberately plain JSON so the model can be
-inspected, diffed, and loaded without a Python environment 🐍❌
-
-Release checkpoints used by the game 📦:
+Grouped-attention:
 
 ```text
-zombie_policy_mlp_release.json 🧱
-zombie_policy_attention_release.json 👀
+t_i = feature_embedding_i + x_i * value_embedding
+T_0 = [t_1, ..., t_23, q_token]
+T_{l+1} = T_l + GQA(RMSNorm(T_l))
+Q(s, .) = Wq RMSNorm(q_token_final) + bq
 ```
 
-The game menu can switch between 🔄:
+The current offline trainer uses a Double-DQN-style target. For the attention
+model, the released trainer updates the Q readout while the attention stack is
+kept fixed. That matches the paper's current limitation section. Do not claim
+full attention-stack backprop unless you actually implement it.
 
-```text
-Rule Expert 📜
-Tiny MLP 🧱
-Grouped Attention 👀
-```
+## 📊 Paper Results
 
-## 📤 What To Publish
+The paper-facing result tables and plot inputs live in `paper-results/` and are
+synced to the current manuscript:
 
-Good public repo contents ✅:
+- `eval_summary_table_latest.tex`
+- `capacity_sweep_summary_table_latest.tex`
+- `seed_repeat_summary_table_latest.tex`
+- `default_comparison_latex_latest.csv`
+- `default_action_distribution_latex_latest.csv`
+- `capacity_sweep_mlp_latex_latest.csv`
+- `capacity_sweep_attention_latex_latest.csv`
+- `selfplay_learning_curve_mlp_latest.csv`
+- `selfplay_learning_curve_attention_latest.csv`
 
-- this `zombie_policy_core` crate 📦
-- tiny release checkpoints 🏋️
-- small sample CSV snippets 📝
-- scripts that reproduce paper tables 📊
-- paper result summaries 📄
+The active paper title is **"When Should Small Games Use AI?"** The repo name is
+historical because the original Godot enemy implementation used zombie agents.
 
-Do not dump the full game, raw telemetry, Godot cache, or target directories
-into the model repo 🗑️ That is not reproducibility. That is a landfill 💩
+## 🪪 License
 
-## 📄 License
-
-MIT 🎉 See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

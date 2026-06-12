@@ -42,13 +42,13 @@ impl Default for Config {
             model: "mlp".to_string(),
             role: "zombie".to_string(),
             input_dim: 23,
-            hidden_dim: 34,
-            d_model: 24,
+            hidden_dim: 275,
+            d_model: 40,
             layers: 2,
             heads: 4,
             kv_heads: 1,
             actions: ACTION_COUNT,
-            epochs: 35,
+            epochs: 100,
             learning_rate: 0.006,
             gamma: 0.96,
             target_sync: 64,
@@ -238,7 +238,7 @@ fn take_value(
 
 fn print_usage() {
     eprintln!(
-        "Usage: train_tiny_q --input <csv> --output <checkpoint.json> --model <mlp|attention> [--role zombie|player] [--epochs 35]"
+        "Usage: train_tiny_q --input <csv> --output <checkpoint.json> --model <mlp|attention> [--role zombie|player] [--epochs 100]"
     );
 }
 

@@ -77,7 +77,7 @@ impl Default for MlpConfig {
     fn default() -> Self {
         Self {
             input_dim: FEATURE_COUNT,
-            hidden_dim: 34,
+            hidden_dim: 275,
             actions: ACTION_COUNT,
         }
     }
@@ -106,7 +106,7 @@ impl Default for GroupedAttentionConfig {
     fn default() -> Self {
         Self {
             input_dim: FEATURE_COUNT,
-            d_model: 24,
+            d_model: 40,
             layers: 2,
             query_heads: 4,
             kv_heads: 1,
@@ -137,24 +137,18 @@ impl GroupedAttentionConfig {
 pub struct EvalSummary {
     pub mode: String,
     pub player_death_rate: f32,
-    pub mean_reward_per_episode: f32,
-    pub mean_player_damage_per_episode: f32,
+    pub mean_ttk_timeout_seconds: f32,
+    pub speed_score: f32,
     pub action_diversity: f32,
 }
 
 pub fn choose_empirical_winner<'a>(summaries: &'a [EvalSummary]) -> Option<&'a EvalSummary> {
-    summaries.iter().max_by(|left, right| {
-        left.player_death_rate
-            .total_cmp(&right.player_death_rate)
-            .then_with(|| {
-                left.mean_reward_per_episode
-                    .total_cmp(&right.mean_reward_per_episode)
-            })
-            .then_with(|| {
-                left.mean_player_damage_per_episode
-                    .total_cmp(&right.mean_player_damage_per_episode)
-            })
-            .then_with(|| left.action_diversity.total_cmp(&right.action_diversity))
+    summaries.iter().min_by(|left, right| {
+        left.mean_ttk_timeout_seconds
+            .total_cmp(&right.mean_ttk_timeout_seconds)
+            .then_with(|| right.player_death_rate.total_cmp(&left.player_death_rate))
+            .then_with(|| right.speed_score.total_cmp(&left.speed_score))
+            .then_with(|| right.action_diversity.total_cmp(&left.action_diversity))
     })
 }
 
@@ -164,53 +158,53 @@ mod tests {
 
     #[test]
     fn default_models_stay_under_budget() {
-        assert_eq!(MlpConfig::default().parameter_count(), 991);
-        assert_eq!(GroupedAttentionConfig::default().parameter_count(), 3677);
+        assert_eq!(MlpConfig::default().parameter_count(), 7980);
+        assert_eq!(GroupedAttentionConfig::default().parameter_count(), 9325);
         assert!(MlpConfig::default().parameter_count() <= PARAMETER_BUDGET);
         assert!(GroupedAttentionConfig::default().parameter_count() <= PARAMETER_BUDGET);
     }
 
     #[test]
-    fn empirical_winner_uses_reward_after_death_rate() {
+    fn empirical_winner_uses_primary_ttk_timeout_metric() {
         let summaries = [
             EvalSummary {
                 mode: "Rule".to_string(),
-                player_death_rate: 1.0,
-                mean_reward_per_episode: 9.83,
-                mean_player_damage_per_episode: 144.0,
-                action_diversity: 0.9361,
+                player_death_rate: 0.98,
+                mean_ttk_timeout_seconds: 5.76,
+                speed_score: 0.90,
+                action_diversity: 0.84,
             },
             EvalSummary {
-                mode: "Attention".to_string(),
+                mode: "MLP 8k".to_string(),
                 player_death_rate: 1.0,
-                mean_reward_per_episode: 28.77,
-                mean_player_damage_per_episode: 135.0,
-                action_diversity: 0.576,
-            },
-        ];
-        let winner = choose_empirical_winner(&summaries).unwrap();
-        assert_eq!(winner.mode, "Attention");
-    }
-
-    #[test]
-    fn empirical_winner_can_still_be_rule() {
-        let summaries = [
-            EvalSummary {
-                mode: "Rule".to_string(),
-                player_death_rate: 1.0,
-                mean_reward_per_episode: 31.0,
-                mean_player_damage_per_episode: 144.0,
-                action_diversity: 0.9361,
-            },
-            EvalSummary {
-                mode: "Attention".to_string(),
-                player_death_rate: 1.0,
-                mean_reward_per_episode: 28.77,
-                mean_player_damage_per_episode: 135.0,
-                action_diversity: 0.576,
+                mean_ttk_timeout_seconds: 5.90,
+                speed_score: 0.90,
+                action_diversity: 0.56,
             },
         ];
         let winner = choose_empirical_winner(&summaries).unwrap();
         assert_eq!(winner.mode, "Rule");
+    }
+
+    #[test]
+    fn empirical_winner_uses_death_rate_only_as_tie_breaker() {
+        let summaries = [
+            EvalSummary {
+                mode: "Rule".to_string(),
+                player_death_rate: 0.95,
+                mean_ttk_timeout_seconds: 6.0,
+                speed_score: 0.90,
+                action_diversity: 0.80,
+            },
+            EvalSummary {
+                mode: "Attention".to_string(),
+                player_death_rate: 1.0,
+                mean_ttk_timeout_seconds: 6.0,
+                speed_score: 0.90,
+                action_diversity: 0.60,
+            },
+        ];
+        let winner = choose_empirical_winner(&summaries).unwrap();
+        assert_eq!(winner.mode, "Attention");
     }
 }
