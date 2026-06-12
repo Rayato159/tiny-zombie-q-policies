@@ -1,4 +1,0 @@
-mode,seed_count,player_death_rate_mean,player_death_rate_std,fastest_player_kill_seconds_mean,fastest_player_kill_seconds_std,mean_time_to_player_death_or_timeout_mean,mean_time_to_player_death_or_timeout_std,speed_score_mean,speed_score_std,mean_reward_per_episode_mean,mean_reward_per_episode_std,action_diversity_mean,action_diversity_std
-Rule,3,0.9833,0.0289,3.0343,0.3375,5.7568,1.635,0.9041,0.0273,-1.845,12.0454,0.8422,0.0791
-MLP,3,1,0,3.5506,0.3051,5.9,0.3069,0.9017,0.0051,-4.0285,3.9812,0.5597,0.0219
-Attention,3,1,0,3.7706,0.1599,6.1808,0.3539,0.897,0.0059,3.7259,11.3851,0.6563,0.1031

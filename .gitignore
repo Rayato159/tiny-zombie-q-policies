@@ -1,13 +1,9 @@
 /target/
 target-*/
 
-# Local datasets and generated checkpoints. Publish tiny curated samples only.
+# Keep this repo tiny. Full game source and raw telemetry stay outside.
 /data/
 /runs/
-/checkpoints/
-*.csv
-!/paper-results/*.csv
-
 *.log
 *.tmp
 *.bak
